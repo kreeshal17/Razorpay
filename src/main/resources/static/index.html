@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Krishal Mini Store - Learn Razorpay</title>
+    <style>
+        body {
+          background: #f9fafb;
+          font-family: 'Segoe UI', sans-serif;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+        }
+
+        .container {
+          background: #fff;
+          padding: 30px;
+          border-radius: 12px;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+          text-align: center;
+          width: 360px;
+        }
+
+        h2 {
+          margin-bottom: 10px;
+        }
+
+        img {
+          width: 100%;
+          border-radius: 10px;
+        }
+
+        .price {
+          color: green;
+          font-size: 22px;
+          font-weight: bold;
+          margin: 10px 0;
+        }
+
+        button {
+          background-color: #007bff;
+          color: white;
+          padding: 12px 20px;
+          font-size: 16px;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: background 0.3s ease;
+        }
+
+        button:hover {
+          background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Premium Earbuds</h2>
+    <img src="https://images.unsplash.com/photo-1612832021654-9ed8a5c5d474?auto=format&fit=crop&w=800&q=80" alt="Earbuds">
+    <p>High bass, wireless, 24hr battery backup</p>
+    <div class="price">₹999</div>
+    <button onclick="payNow()">Pay with Razorpay</button>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    function payNow() {
+      const name = "Krishal";
+      const amount = 999;
+      const currency = "INR";
+      const receipt = "receipt_krishal_001";
+
+      fetch(`http://localhost:5555/api?amount=${amount}&currency=${currency}&receipt=${receipt}`, {
+        method: "POST"
+      })
+      .then(res => res.text())
+      .then(orderJson => {
+        const order = JSON.parse(orderJson);
+
+        const options = {
+          key: "rzp_test_qYFkxVNJ8gPh2K",  // 🔥 Directly exposed for testing
+          amount: order.amount,
+          currency: order.currency,
+          name: "Krishal Mini Store",
+          description: "Premium Earbuds",
+          image: "https://i.imgur.com/Yy6h9sX.png",
+          order_id: order.id,
+          handler: function (response) {
+            // Save payment info
+            fetch("http://localhost:5555/api/payment-success", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: new URLSearchParams({
+                paymentId: response.razorpay_payment_id,
+                name: name,
+                orderId: response.razorpay_order_id,
+                signature: response.razorpay_signature,
+                paymentID: response.razorpay_payment_id,
+                amount: amount,
+                currency: currency,
+                status: "PAID"
+              })
+            })
+            .then(r => r.text())
+            .then(msg => alert("✅ Payment successful!\n" + msg))
+            .catch(err => alert("❌ Error saving payment info: " + err));
+          },
+          prefill: {
+            name: name,
+            email: "krishal@example.com",
+            contact: "9876543210"
+          },
+          theme: { color: "#007bff" }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.open();
+      })
+      .catch(err => alert("❌ Payment initialization failed: " + err));
+    }
+</script>
+
+</body>
+</html>
